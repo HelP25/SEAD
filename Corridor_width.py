@@ -52,7 +52,7 @@ def corridor_width(allocation_matrix, aircraft_secured, security_width):
     # width = min(corridor)  # The width is equal to the smallest interesting widths
     # return True, width + security_width
 
-    # Generate a dictionary of all radar ranges with their indices
+   # Generate a dictionary of all radar ranges with their indices
     ranges_with_indices = {(i+1, j+1): allocation_matrix[i][0].range(allocation_matrix[j][0])
                             for i in range(len(allocation_matrix))
                             for j in range(i + 1, len(allocation_matrix))
@@ -65,7 +65,7 @@ def corridor_width(allocation_matrix, aircraft_secured, security_width):
     widths = {key: (value - allocation_matrix[key[0]-1][0].get_detection_range(aircraft_secured, allocation_matrix[key[0]-1][1])
                     -allocation_matrix[key[1]-1][0].get_detection_range(aircraft_secured, allocation_matrix[key[1]-1][1]))
               for key, value in sorted_ranges}
-    
+
     # Create the basic widths list
     basic_widths = []
     for i in range(1, len(allocation_matrix)):
@@ -74,19 +74,25 @@ def corridor_width(allocation_matrix, aircraft_secured, security_width):
     # Sort the basic widths in ascending order
     basic_widths = sorted(basic_widths, key=lambda x: x[1])
 
-    # Determine if there is a potential safe corridor
-    if basic_widths[-1][1] - security_width<= 0:# The highest one is where the corridor will be, if there is one
-        return False # If the highest basic width is not positive, then there is no corridor
+    cpt = 0
+    Test = False
+    while cpt < len(basic_widths) and Test is False:# The highest basic width is not always the good one, so we have to check all the positives basic widths
+        Test = True
+        # Determine if there is a potential safe corridor
+        if basic_widths[-cpt-1][1] - security_width <= 0:# The highest one is where the corridor will be in first, if there is one
+            return False # If the highest basic width is not positive, then there is no corridor
 
-    # Check if other widths obstruct the potential corridor
-    problematic_widths = []
-    for key, value in widths.items():
-        if key[0] <= basic_widths[-1][0][0] and key[1] >= basic_widths[-1][0][1]:
-            if value - security_width <= 0:
-                return False # If it is the case, the other widths which could obstruct the probable safe corridor must be positive too
-            else:
-                problematic_widths += [value]# If they are positive, then they must be taken into account to determine the width of the safe corridor
-
+        # Check if other widths obstruct the potential corridor
+        problematic_widths = []
+        for key, value in widths.items():
+            if key[0] <= basic_widths[-cpt-1][0][0] and key[1] >= basic_widths[-cpt-1][0][1]:
+                if value - security_width <= 0:
+                    Test = False # If it is the case, the other widths which could obstruct the probable safe corridor must be positive too
+                else:
+                    problematic_widths += [value]# If they are positive, then they must be taken into account to determine the width of the safe corridor
+        cpt += 1
+    if Test is False:
+        return False
     # Determine the final width of the safe corridor
     final_width = min(problematic_widths)# The width is equal to the smallest interesting widths
     return True,final_width
