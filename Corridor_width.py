@@ -65,24 +65,28 @@ def corridor_width(allocation_matrix, aircraft_secured, security_width):
     widths = {key: (value - allocation_matrix[key[0]-1][0].get_detection_range(aircraft_secured, allocation_matrix[key[0]-1][1])
                     -allocation_matrix[key[1]-1][0].get_detection_range(aircraft_secured, allocation_matrix[key[1]-1][1]))
               for key, value in sorted_ranges}
+    
+    # Create the basic widths list
+    basic_widths = []
+    for i in range(1, len(allocation_matrix)):
+        basic_widths += [[(i, i+1), widths.get((i, i+1))]]
 
     # Sort the basic widths in ascending order
-    basic_widths = sorted(widths.items(), key=lambda x: x[1])[:len(allocation_matrix) - 1]
+    basic_widths = sorted(basic_widths, key=lambda x: x[1])
 
     # Determine if there is a potential safe corridor
-    potential_corridor_width = basic_widths[-1][1]
-    if basic_widths[-1][1] - security_width<= 0:
-        return False
+    if basic_widths[-1][1] - security_width<= 0:# The highest one is where the corridor will be, if there is one
+        return False # If the highest basic width is not positive, then there is no corridor
 
     # Check if other widths obstruct the potential corridor
-    problematic_width = []
+    problematic_widths = []
     for key, value in widths.items():
         if key[0] <= basic_widths[-1][0][0] and key[1] >= basic_widths[-1][0][1]:
             if value - security_width <= 0:
-                return False
+                return False # If it is the case, the other widths which could obstruct the probable safe corridor must be positive too
             else:
-                problematic_width += [value]
+                problematic_widths += [value]# If they are positive, then they must be taken into account to determine the width of the safe corridor
 
     # Determine the final width of the safe corridor
-    final_width = min(problematic_width)
+    final_width = min(problematic_widths)# The width is equal to the smallest interesting widths
     return True,final_width
